@@ -1,0 +1,27 @@
+{
+  "Lua": {
+    "runtime": {
+      "version": "LuaJIT"
+    },
+    "diagnostics": {
+      "globals": [
+        "bit",
+        "vim",
+        "it",
+        "describe",
+        "before_each",
+        "after_each"
+      ]
+    },
+    "workspace": {
+      "library": [
+        "$VIMRUNTIME",
+        "$HOME/.local/share/nvim/lazy"
+      ],
+      "checkThirdParty": false
+    },
+    "telemetry": {
+      "enable": false
+    }
+  }
+}
