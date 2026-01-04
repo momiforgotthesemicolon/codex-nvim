@@ -10,13 +10,11 @@ local config = {
 
 local function resolveStatusHl()
   return vim.g.codex_status_hl
-    or vim.g.animator_codex_status_hl
     or config.status_hl
 end
 
 local function resolveStatusInterval()
   local interval = vim.g.codex_status_interval_ms
-    or vim.g.animator_codex_status_interval
     or config.status_interval_ms
   return tonumber(interval) or config.status_interval_ms
 end

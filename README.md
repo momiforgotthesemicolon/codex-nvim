@@ -35,11 +35,6 @@ require("codex").setup({
   status_interval_ms = 200,
 })
 ```
-
 You can also override these via globals:
 - `vim.g.codex_status_hl`
 - `vim.g.codex_status_interval_ms`
-
-Legacy globals from the original config are still respected:
-- `vim.g.animator_codex_status_hl`
-- `vim.g.animator_codex_status_interval`
