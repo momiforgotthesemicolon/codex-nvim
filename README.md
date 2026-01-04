@@ -38,6 +38,10 @@ require("codex").setup({
   status_interval_ms = 200,
 })
 ```
+Settings:
+- `status_hl` - highlight group used for the inline status line while Codex runs.
+- `status_interval_ms` - how often (ms) the status line updates.
+
 You can also override these via globals:
 - `vim.g.codex_status_hl`
 - `vim.g.codex_status_interval_ms`
