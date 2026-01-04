@@ -3,6 +3,9 @@
 Neovim integration for the `codex` CLI. It sends the current selection or buffer
 to Codex and replaces it with the returned output.
 
+## Demo
+[Video demo](https://youtu.be/PtyW8VbhSUE)
+
 ## Requirements
 - `codex` available on your `$PATH`
 - Neovim 0.8+
