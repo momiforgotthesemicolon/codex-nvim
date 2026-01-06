@@ -415,6 +415,15 @@ local function replaceFullBuffer(bufnr, newText)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, newLines)
 end
 
+--- Clear the buffer without recording the change in undo history.
+---@param bufnr integer buffer handle
+local function clearBufferWithoutUndo(bufnr)
+  local undoLevels = vim.api.nvim_buf_get_option(bufnr, "undolevels")
+  vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_option(bufnr, "undolevels", undoLevels)
+end
+
 --- Restore the cursor position after buffer updates.
 ---@param bufnr integer buffer handle
 ---@param cursor table|nil cursor position {row, col}
@@ -452,6 +461,7 @@ local function handleJobExit(opts, exitCode)
     if output == "" and #opts.stderrOutputLines > 0 then
       output = table.concat(opts.stderrOutputLines, "\n")
     end
+    clearBufferWithoutUndo(opts.bufnr)
     replaceFullBuffer(opts.bufnr, output)
     restoreCursor(opts.bufnr, opts.cursor)
     appendLog(opts.logPath, "Exit code: " .. exitCode)
@@ -599,7 +609,6 @@ function M.completeFullBuffer()
     vim.notify("Buffer is empty.", vim.log.levels.INFO)
     return
   end
-  -- Instead of giving only vague description of the cursor and context, we should also git the text around the cursor so its easier for codex to determine the change that the user wants
   local range = getFullBufferRange(bufnr)
   local prompt = buildPrompt(
     bufnr,
