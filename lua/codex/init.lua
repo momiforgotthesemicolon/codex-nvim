@@ -367,7 +367,7 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
   local bufferLines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local scopeTitle = scopeLabel or "Selection"
   local taskTitle = taskLabel
-    or "Replace the full buffer with the correct output, using the provided scope as guidance."
+      or "Replace the full buffer with the correct output, using the provided scope as guidance."
   local returnLabel = "Return only the full buffer text with your changes applied."
   local shouldIncludeFullBuffer = includeFullBuffer ~= false
   local promptLines = {
