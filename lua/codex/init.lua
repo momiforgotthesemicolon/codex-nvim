@@ -397,23 +397,32 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
   return table.concat(promptLines, "\n"), repoRoot, bufferDir
 end
 
---- Replace the buffer text within a range.
+--- Replace the full buffer text.
 ---@param bufnr integer buffer handle
----@param range table selection range
 ---@param newText string replacement text
-local function replaceRange(bufnr, range, newText)
+local function replaceFullBuffer(bufnr, newText)
   local newLines = {}
   if newText ~= "" then
     newLines = vim.split(newText, "\n", { plain = true })
   end
-  vim.api.nvim_buf_set_text(
-    bufnr,
-    range.start_row - 1,
-    range.start_col,
-    range.end_row - 1,
-    range.end_col,
-    newLines
-  )
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, newLines)
+end
+
+--- Restore the cursor position after buffer updates.
+---@param bufnr integer buffer handle
+---@param cursor table|nil cursor position {row, col}
+local function restoreCursor(bufnr, cursor)
+  if not cursor then
+    return
+  end
+  local lineCount = vim.api.nvim_buf_line_count(bufnr)
+  if lineCount < 1 then
+    return
+  end
+  local row = math.max(1, math.min(cursor[1], lineCount))
+  local line = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
+  local col = math.max(0, math.min(cursor[2], #line))
+  vim.api.nvim_win_set_cursor(0, { row, col })
 end
 
 --- Finalize a Codex job and apply its output.
@@ -436,7 +445,8 @@ local function handleJobExit(opts, exitCode)
     if output == "" and #opts.stderrOutputLines > 0 then
       output = table.concat(opts.stderrOutputLines, "\n")
     end
-    replaceRange(opts.bufnr, opts.range, output)
+    replaceFullBuffer(opts.bufnr, output)
+    restoreCursor(opts.bufnr, opts.cursor)
     appendLog(opts.logPath, "Exit code: " .. exitCode)
     appendLog(opts.logPath, "Codex invocation finished.")
   end)
@@ -513,6 +523,7 @@ local function startJob(bufnr, range, prompt, cursor)
       handleJobExit({
         bufnr = bufnr,
         range = range,
+        cursor = cursor,
         statusTimer = statusTimer,
         extmarkId = extmarkId,
         logPath = logPath,
