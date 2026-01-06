@@ -380,8 +380,10 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
     "Keep in mind that you cannot interact with the user. If you face choice, please chose the most probable option",
     "Please return only the code output",
     "Make sure that outputs new lines and tabs style matches the initial buffer",
-    "The selection block is context only; do not include it in the output.",
+    "The selection block / Context near cursor is context only; do not include it in the output.",
+    "If you see the comment next to the cursor position, there is a high chance that this is a comment directed toward you, not code itself",
     "Your output must be the full buffer only, with edits applied in place.",
+    "If no changes are needed, return the full unchanged buffer.",
     "",
     scopeTitle .. ":",
   }
@@ -558,7 +560,6 @@ local function bufferHasContent(bufnr)
   end
   return false
 end
-
 
 --- Complete the current selection or full buffer based on cursor context.
 function M.completeSelectionOrScope()
