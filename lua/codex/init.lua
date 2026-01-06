@@ -600,11 +600,11 @@ end
 --- Complete the entire buffer based on cursor context.
 function M.completeFullBuffer()
   local bufnr = vim.api.nvim_get_current_buf()
-  local cursor = vim.api.nvim_win_get_cursor(0)
   if not bufferHasContent(bufnr) then
     vim.notify("Buffer is empty.", vim.log.levels.INFO)
     return
   end
+  local cursor = vim.api.nvim_win_get_cursor(0)
   local range = getFullBufferRange(bufnr)
   local prompt = buildPrompt(
     bufnr,
