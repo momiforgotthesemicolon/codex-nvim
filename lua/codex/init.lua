@@ -524,9 +524,27 @@ local function startJob(bufnr, range, prompt)
   vim.fn.chanclose(jobId, "stdin")
 end
 
+--- Check if the buffer has any non-whitespace content.
+---@param bufnr integer buffer handle
+---@return boolean
+local function bufferHasContent(bufnr)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for _, line in ipairs(lines) do
+    if line:match("%S") then
+      return true
+    end
+  end
+  return false
+end
+
+
 --- Complete the current selection or full buffer based on cursor context.
 function M.completeSelectionOrScope()
   local bufnr = vim.api.nvim_get_current_buf()
+  if not bufferHasContent(bufnr) then
+    vim.notify("Buffer is empty.", vim.log.levels.INFO)
+    return
+  end
   local visualRange = getVisualRange(bufnr)
   local fallbackRange = getFallbackRange(bufnr)
   local range = visualRange or fallbackRange
@@ -550,8 +568,11 @@ end
 
 --- Complete the entire buffer based on cursor context.
 function M.completeFullBuffer()
-  -- if bufnr is empty we should not invoke codes, rather then invoke a message that buffer is empty
   local bufnr = vim.api.nvim_get_current_buf()
+  if not bufferHasContent(bufnr) then
+    vim.notify("Buffer is empty.", vim.log.levels.INFO)
+    return
+  end
   local range = getFullBufferRange(bufnr)
   local prompt = buildPrompt(
     bufnr,
