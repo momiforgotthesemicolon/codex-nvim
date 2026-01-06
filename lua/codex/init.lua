@@ -605,7 +605,7 @@ function M.completeFullBuffer()
   local bufnr = vim.api.nvim_get_current_buf()
   if not bufferHasContent(bufnr) then
     vim.api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
-    vim.notify("Buffer is empty.", vim.log.levels.INFO)
+    vim.notify("Codex: Buffer is empty.", vim.log.levels.INFO)
     return
   end
   local cursor = vim.api.nvim_win_get_cursor(0)
