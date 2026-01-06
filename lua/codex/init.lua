@@ -2,23 +2,29 @@ local M = {}
 
 local namespace = vim.api.nvim_create_namespace("codex_nvim")
 local lastLogPath = nil
+local activeJobId = nil
 
 local config = {
   status_hl = "CodexStatus",
   status_interval_ms = 200,
 }
 
+--- Resolve the highlight group name for Codex status.
+---@return string highlight group name
 local function resolveStatusHl()
   return vim.g.codex_status_hl
-    or config.status_hl
+      or config.status_hl
 end
 
+--- Resolve the status update interval from globals or config.
+---@return integer status interval in milliseconds
 local function resolveStatusInterval()
   local interval = vim.g.codex_status_interval_ms
-    or config.status_interval_ms
+      or config.status_interval_ms
   return tonumber(interval) or config.status_interval_ms
 end
 
+--- Ensure the Codex status highlight group is defined with default styling.
 local function ensureHighlight()
   vim.api.nvim_set_hl(0, resolveStatusHl(), { fg = "#bfbfbf", default = true })
 end
@@ -114,9 +120,10 @@ end
 
 --- Build a range for the current cursor line.
 ---@param bufnr integer buffer handle
+---@param cursor table|nil cursor position {row, col}
 ---@return table selection range covering the cursor line
-local function getFallbackRange(bufnr)
-  local cursor = vim.api.nvim_win_get_cursor(0)
+local function getFallbackRange(bufnr, cursor)
+  cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1] or ""
 
   return {
@@ -124,6 +131,97 @@ local function getFallbackRange(bufnr)
     start_col = 0,
     end_row = cursor[1],
     end_col = #line,
+  }
+end
+
+--- Determine the smallest relevant scope around the cursor.
+---@param bufnr integer buffer handle
+---@param cursor table|nil cursor position {row, col}
+---@return table|nil selection range covering the detected scope
+local function getScopeRange(bufnr, cursor)
+  cursor = cursor or vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1] - 1
+  local col = cursor[2]
+  local ok, node = pcall(vim.treesitter.get_node, { buf = bufnr, pos = { row, col } })
+  if not ok or not node then
+    local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
+    if ok_parser and parser then
+      local tree = parser:parse()[1]
+      if tree then
+        node = tree:root():named_descendant_for_range(row, col, row, col)
+      end
+    end
+  end
+  if not node then
+    return nil
+  end
+
+  local scopePriorities = {
+    comment = 1,
+    function_declaration = 2,
+    function_definition = 2,
+    method_declaration = 2,
+    method_definition = 2,
+    class_declaration = 2,
+    class_definition = 2,
+    interface_declaration = 2,
+    struct_specifier = 2,
+    enum_specifier = 2,
+    module = 2,
+    local_function = 2,
+    local_variable_declaration = 3,
+    variable_declaration = 3,
+    assignment_statement = 3,
+    lexical_declaration = 3,
+    declaration = 3,
+    property_declaration = 3,
+    field_definition = 3,
+    if_statement = 4,
+    for_statement = 4,
+    while_statement = 4,
+    repeat_statement = 4,
+    do_statement = 4,
+    switch_statement = 4,
+    case_statement = 4,
+    block = 5,
+  }
+
+  ---@type TSNode?
+  local bestNode = nil
+  local bestPriority = math.huge
+  local bestSize = math.huge
+
+  ---@type TSNode?
+  local current = node
+  while current do
+    local nodeType = current:type()
+    local priority = scopePriorities[nodeType]
+    if priority then
+      local srow, scol, erow, ecol = current:range()
+      local size = (erow - srow) * 10000 + (ecol - scol)
+      if priority < bestPriority or (priority == bestPriority and size < bestSize) then
+        bestNode = current
+        bestPriority = priority
+        bestSize = size
+      end
+    end
+    current = current:parent()
+  end
+
+  if not bestNode then
+    return nil
+  end
+
+  local srow, scol, erow, ecol = bestNode:range()
+  if erow == srow and ecol == scol then
+    return nil
+  end
+
+  return {
+    start_row = srow + 1,
+    start_col = scol,
+    end_row = erow + 1,
+    end_col = ecol,
   }
 end
 
@@ -160,10 +258,11 @@ end
 --- Determine the row to place the virtual status line for a given selection.
 ---@param bufnr integer buffer handle
 ---@param range table selection range with start_row/end_row
+---@param cursor table|nil cursor position {row, col}
 ---@return integer status row (0-based) for the status extmark
-local function getStatusRow(bufnr, range)
+local function getStatusRow(bufnr, range, cursor)
   local bufLastLine = vim.api.nvim_buf_line_count(bufnr)
-  local cursor = vim.api.nvim_win_get_cursor(0)
+  cursor = cursor or vim.api.nvim_win_get_cursor(0)
 
   if range.start_row == 1 and range.end_row == bufLastLine then
     return math.max(cursor[1] - 1, 0)
@@ -177,9 +276,10 @@ end
 ---@param range table selection range with start_row/end_row
 ---@param message string status message to display
 ---@param extmarkId integer|nil existing extmark id, if any
+---@param cursor table|nil cursor position {row, col}
 ---@return integer extmark id for the status line
-local function setStatus(bufnr, range, message, extmarkId)
-  local statusRow = getStatusRow(bufnr, range)
+local function setStatus(bufnr, range, message, extmarkId, cursor)
+  local statusRow = getStatusRow(bufnr, range, cursor)
   return vim.api.nvim_buf_set_extmark(bufnr, namespace, statusRow, 0, {
     id = extmarkId,
     virt_lines = { { { message, resolveStatusHl() } } },
@@ -253,27 +353,23 @@ end
 ---@param scopeLabel string|nil label for the selection header
 ---@param taskLabel string|nil task description for the prompt
 ---@param includeFullBuffer boolean|nil whether to include the full buffer contents
+---@param cursor table|nil cursor position {row, col}
 ---@return string prompt text
 ---@return string|nil repoRoot repository root (if detected)
 ---@return string bufferDir buffer directory
-local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffer)
+local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffer, cursor)
   local bufferPath = vim.api.nvim_buf_get_name(bufnr)
   local bufferDir = bufferPath ~= "" and vim.fn.fnamemodify(bufferPath, ":h") or vim.loop.cwd() or "."
   local repoRoot = resolveRepoRoot(bufferDir) or "unknown"
 
-  local cursor = vim.api.nvim_win_get_cursor(0)
+  cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local filetype = vim.bo[bufnr].filetype
   local selectionLines = getText(bufnr, range)
   local bufferLines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local scopeTitle = scopeLabel or "Selection"
-  local taskTitle = taskLabel or "Replace the selected text in the current buffer with the correct output."
-  local returnLabel = scopeLabel == "Current line"
-      and "Return only the replacement text for the current line."
-      or scopeLabel == "Full buffer"
-      and "Return only the replacement text for the full buffer."
-      or scopeLabel == "Context line"
-      and "Return only the replacement text for the detected scope."
-      or "Return only the replacement text for the selection."
+  local taskTitle = taskLabel
+      or "Replace the full buffer with the correct output, using the provided scope as guidance."
+  local returnLabel = "Return only the full buffer text with your changes applied."
   local shouldIncludeFullBuffer = includeFullBuffer ~= false
   local promptLines = {
     "Task: " .. taskTitle,
@@ -285,6 +381,10 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
     "Keep in mind that you cannot interact with the user. If you face choice, please chose the most probable option",
     "Please return only the code output",
     "Make sure that outputs new lines and tabs style matches the initial buffer",
+    "The selection block / Context near cursor is context only; do not include it in the output.",
+    "If you see the comment next to the cursor position, there is a high chance that this is a comment directed toward you, not code itself",
+    "Your output must be the full buffer only, with edits applied in place.",
+    "If no changes are needed, return the full unchanged buffer.",
     "",
     scopeTitle .. ":",
   }
@@ -305,23 +405,41 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
   return table.concat(promptLines, "\n"), repoRoot, bufferDir
 end
 
---- Replace the buffer text within a range.
+--- Replace the full buffer text.
 ---@param bufnr integer buffer handle
----@param range table selection range
 ---@param newText string replacement text
-local function replaceRange(bufnr, range, newText)
+local function replaceFullBuffer(bufnr, newText)
   local newLines = {}
   if newText ~= "" then
     newLines = vim.split(newText, "\n", { plain = true })
   end
-  vim.api.nvim_buf_set_text(
-    bufnr,
-    range.start_row - 1,
-    range.start_col,
-    range.end_row - 1,
-    range.end_col,
-    newLines
-  )
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, newLines)
+end
+
+--- Clear the buffer without recording the change in undo history.
+---@param bufnr integer buffer handle
+local function clearBufferWithoutUndo(bufnr)
+  local undoLevels = vim.api.nvim_buf_get_option(bufnr, "undolevels")
+  vim.api.nvim_buf_set_option(bufnr, "undolevels", -1)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_option(bufnr, "undolevels", undoLevels)
+end
+
+--- Restore the cursor position after buffer updates.
+---@param bufnr integer buffer handle
+---@param cursor table|nil cursor position {row, col}
+local function restoreCursor(bufnr, cursor)
+  if not cursor then
+    return
+  end
+  local lineCount = vim.api.nvim_buf_line_count(bufnr)
+  if lineCount < 1 then
+    return
+  end
+  local row = math.max(1, math.min(cursor[1], lineCount))
+  local line = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
+  local col = math.max(0, math.min(cursor[2], #line))
+  vim.api.nvim_win_set_cursor(0, { row, col })
 end
 
 --- Finalize a Codex job and apply its output.
@@ -335,6 +453,7 @@ local function handleJobExit(opts, exitCode)
       statusTimer:close()
     end
     clearStatus(opts.bufnr, opts.extmarkId)
+    activeJobId = nil
     if exitCode ~= 0 then
       vim.notify("Codex failed. See log: " .. opts.logPath, vim.log.levels.ERROR)
       appendLog(opts.logPath, "Exit code: " .. exitCode)
@@ -344,7 +463,9 @@ local function handleJobExit(opts, exitCode)
     if output == "" and #opts.stderrOutputLines > 0 then
       output = table.concat(opts.stderrOutputLines, "\n")
     end
-    replaceRange(opts.bufnr, opts.range, output)
+    clearBufferWithoutUndo(opts.bufnr)
+    replaceFullBuffer(opts.bufnr, output)
+    restoreCursor(opts.bufnr, opts.cursor)
     appendLog(opts.logPath, "Exit code: " .. exitCode)
     appendLog(opts.logPath, "Codex invocation finished.")
   end)
@@ -354,7 +475,13 @@ end
 ---@param bufnr integer buffer handle
 ---@param range table selection range
 ---@param prompt string prompt to send
-local function startJob(bufnr, range, prompt)
+---@param cursor table|nil cursor position {row, col}
+local function startJob(bufnr, range, prompt, cursor)
+  if activeJobId and vim.fn.jobwait({ activeJobId }, 0)[1] == -1 then
+    vim.notify("Codex job already running.", vim.log.levels.WARN)
+    return
+  end
+
   local bufferPath = vim.api.nvim_buf_get_name(bufnr)
   local bufferDir = bufferPath ~= "" and vim.fn.fnamemodify(bufferPath, ":h") or vim.loop.cwd() or "."
   local repoRoot = resolveRepoRoot(bufferDir)
@@ -398,7 +525,7 @@ local function startJob(bufnr, range, prompt)
       return
     end
     local message = string.format("%s (%s)", state.statusMessage, formatElapsed())
-    extmarkId = setStatus(bufnr, range, message, extmarkId)
+    extmarkId = setStatus(bufnr, range, message, extmarkId, cursor)
   end
 
   state.updateStatus = updateStatus
@@ -420,6 +547,7 @@ local function startJob(bufnr, range, prompt)
       handleJobExit({
         bufnr = bufnr,
         range = range,
+        cursor = cursor,
         statusTimer = statusTimer,
         extmarkId = extmarkId,
         logPath = logPath,
@@ -433,43 +561,72 @@ local function startJob(bufnr, range, prompt)
     vim.notify("Failed to start Codex job", vim.log.levels.ERROR)
     return
   end
+  activeJobId = jobId
   vim.fn.chansend(jobId, prompt)
   vim.fn.chanclose(jobId, "stdin")
+end
+
+--- Check if the buffer has any non-whitespace content.
+---@param bufnr integer buffer handle
+---@return boolean
+local function bufferHasContent(bufnr)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  for _, line in ipairs(lines) do
+    if line:match("[^%s%z]") then
+      return true
+    end
+  end
+  return false
 end
 
 --- Complete the current selection or full buffer based on cursor context.
 function M.completeSelectionOrScope()
   local bufnr = vim.api.nvim_get_current_buf()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  if not bufferHasContent(bufnr) then
+    vim.notify("Buffer is empty.", vim.log.levels.INFO)
+    return
+  end
   local visualRange = getVisualRange(bufnr)
-  local range = visualRange or getFallbackRange(bufnr)
+  local fallbackRange = getFallbackRange(bufnr, cursor)
+  local range = visualRange or fallbackRange
   local prompt
   if visualRange then
-    prompt = buildPrompt(bufnr, range)
+    prompt = buildPrompt(bufnr, range, nil, nil, nil, cursor)
   else
-    range = getFullBufferRange(bufnr)
+    local scopeRange = getScopeRange(bufnr, cursor)
+    range = scopeRange or fallbackRange
+    local scopeLabel = scopeRange and "Context line" or "Current line"
     prompt = buildPrompt(
       bufnr,
       range,
-      "Full buffer",
+      scopeLabel,
       "Complete the scope based on the context of the line under the cursor. The scope could be a class, method, function, comment, variable, or other logical block. Update the full buffer accordingly.",
-      false
+      true,
+      cursor
     )
   end
-  startJob(bufnr, range, prompt)
+  startJob(bufnr, range, prompt, cursor)
 end
 
---- Complete the entire buffer based on cursor context.
 function M.completeFullBuffer()
   local bufnr = vim.api.nvim_get_current_buf()
+  if not bufferHasContent(bufnr) then
+    vim.api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
+    vim.notify("Codex: Buffer is empty.", vim.log.levels.INFO)
+    return
+  end
+  local cursor = vim.api.nvim_win_get_cursor(0)
   local range = getFullBufferRange(bufnr)
   local prompt = buildPrompt(
     bufnr,
     range,
     "Full buffer",
     "Replace the full buffer with the generated output only in the context of given neovim cursor. Context could be inside a function, lambda, class, method or scope implementation.",
-    false
+    false,
+    cursor
   )
-  startJob(bufnr, range, prompt)
+  startJob(bufnr, range, prompt, cursor)
 end
 
 function M.openLastLog()
