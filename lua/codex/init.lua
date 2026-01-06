@@ -2,6 +2,7 @@ local M = {}
 
 local namespace = vim.api.nvim_create_namespace("codex_nvim")
 local lastLogPath = nil
+local activeJobId = nil
 
 local config = {
   status_hl = "CodexStatus",
@@ -452,6 +453,7 @@ local function handleJobExit(opts, exitCode)
       statusTimer:close()
     end
     clearStatus(opts.bufnr, opts.extmarkId)
+    activeJobId = nil
     if exitCode ~= 0 then
       vim.notify("Codex failed. See log: " .. opts.logPath, vim.log.levels.ERROR)
       appendLog(opts.logPath, "Exit code: " .. exitCode)
@@ -475,6 +477,11 @@ end
 ---@param prompt string prompt to send
 ---@param cursor table|nil cursor position {row, col}
 local function startJob(bufnr, range, prompt, cursor)
+  if activeJobId and vim.fn.jobwait({ activeJobId }, 0)[1] == -1 then
+    vim.notify("Codex job already running.", vim.log.levels.WARN)
+    return
+  end
+
   local bufferPath = vim.api.nvim_buf_get_name(bufnr)
   local bufferDir = bufferPath ~= "" and vim.fn.fnamemodify(bufferPath, ":h") or vim.loop.cwd() or "."
   local repoRoot = resolveRepoRoot(bufferDir)
@@ -554,6 +561,7 @@ local function startJob(bufnr, range, prompt, cursor)
     vim.notify("Failed to start Codex job", vim.log.levels.ERROR)
     return
   end
+  activeJobId = jobId
   vim.fn.chansend(jobId, prompt)
   vim.fn.chanclose(jobId, "stdin")
 end
