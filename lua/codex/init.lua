@@ -563,8 +563,12 @@ end
 ---@return boolean
 local function bufferHasContent(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local content = table.concat(lines, "\n"):gsub("%s", "")
-  return content ~= ""
+  for _, line in ipairs(lines) do
+    if line:match("[^%s%z]") then
+      return true
+    end
+  end
+  return false
 end
 
 --- Complete the current selection or full buffer based on cursor context.
@@ -597,10 +601,10 @@ function M.completeSelectionOrScope()
   startJob(bufnr, range, prompt, cursor)
 end
 
---- Complete the entire buffer based on cursor context.
 function M.completeFullBuffer()
   local bufnr = vim.api.nvim_get_current_buf()
   if not bufferHasContent(bufnr) then
+    vim.api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
     vim.notify("Buffer is empty.", vim.log.levels.INFO)
     return
   end
