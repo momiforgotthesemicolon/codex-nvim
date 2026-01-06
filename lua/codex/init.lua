@@ -23,6 +23,7 @@ local function resolveStatusInterval()
   return tonumber(interval) or config.status_interval_ms
 end
 
+--- Ensure the Codex status highlight group is defined with default styling.
 local function ensureHighlight()
   vim.api.nvim_set_hl(0, resolveStatusHl(), { fg = "#bfbfbf", default = true })
 end
@@ -622,3 +623,5 @@ function M.setup(opts)
   config = vim.tbl_extend("force", config, opts or {})
   ensureHighlight()
 end
+
+return M
