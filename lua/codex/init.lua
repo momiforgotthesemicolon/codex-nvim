@@ -8,11 +8,15 @@ local config = {
   status_interval_ms = 200,
 }
 
+--- Resolve the highlight group name for Codex status.
+---@return string highlight group name
 local function resolveStatusHl()
   return vim.g.codex_status_hl
       or config.status_hl
 end
 
+--- Resolve the status update interval from globals or config.
+---@return integer status interval in milliseconds
 local function resolveStatusInterval()
   local interval = vim.g.codex_status_interval_ms
       or config.status_interval_ms
@@ -375,6 +379,8 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
     "Keep in mind that you cannot interact with the user. If you face choice, please chose the most probable option",
     "Please return only the code output",
     "Make sure that outputs new lines and tabs style matches the initial buffer",
+    "The selection block is context only; do not include it in the output.",
+    "Your output must be the full buffer only, with edits applied in place.",
     "",
     scopeTitle .. ":",
   }
