@@ -10,12 +10,12 @@ local config = {
 
 local function resolveStatusHl()
   return vim.g.codex_status_hl
-    or config.status_hl
+      or config.status_hl
 end
 
 local function resolveStatusInterval()
   local interval = vim.g.codex_status_interval_ms
-    or config.status_interval_ms
+      or config.status_interval_ms
   return tonumber(interval) or config.status_interval_ms
 end
 
@@ -124,6 +124,93 @@ local function getFallbackRange(bufnr)
     start_col = 0,
     end_row = cursor[1],
     end_col = #line,
+  }
+end
+
+--- Determine the smallest relevant scope around the cursor.
+---@param bufnr integer buffer handle
+---@return table|nil selection range covering the detected scope
+local function getScopeRange(bufnr)
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row = cursor[1] - 1
+  local col = cursor[2]
+  local ok, node = pcall(vim.treesitter.get_node, { buf = bufnr, pos = { row, col } })
+  if not ok or not node then
+    local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
+    if ok_parser and parser then
+      local tree = parser:parse()[1]
+      if tree then
+        node = tree:root():named_descendant_for_range(row, col, row, col)
+      end
+    end
+  end
+  if not node then
+    return nil
+  end
+
+  local scopePriorities = {
+    comment = 1,
+    function_declaration = 2,
+    function_definition = 2,
+    method_declaration = 2,
+    method_definition = 2,
+    class_declaration = 2,
+    class_definition = 2,
+    interface_declaration = 2,
+    struct_specifier = 2,
+    enum_specifier = 2,
+    module = 2,
+    local_function = 2,
+    local_variable_declaration = 3,
+    variable_declaration = 3,
+    assignment_statement = 3,
+    lexical_declaration = 3,
+    declaration = 3,
+    property_declaration = 3,
+    field_definition = 3,
+    if_statement = 4,
+    for_statement = 4,
+    while_statement = 4,
+    repeat_statement = 4,
+    do_statement = 4,
+    switch_statement = 4,
+    case_statement = 4,
+    block = 5,
+  }
+
+  local bestNode = nil
+  local bestPriority = math.huge
+  local bestSize = math.huge
+  local current = node
+  while current do
+    local nodeType = current:type()
+    local priority = scopePriorities[nodeType]
+    if priority then
+      local srow, scol, erow, ecol = current:range()
+      local size = (erow - srow) * 10000 + (ecol - scol)
+      if priority < bestPriority or (priority == bestPriority and size < bestSize) then
+        bestNode = current
+        bestPriority = priority
+        bestSize = size
+      end
+    end
+    current = current:parent()
+  end
+
+  if not bestNode then
+    return nil
+  end
+
+  local srow, scol, erow, ecol = bestNode:range()
+  if erow == srow and ecol == scol then
+    return nil
+  end
+
+  return {
+    start_row = srow + 1,
+    start_col = scol,
+    end_row = erow + 1,
+    end_col = ecol,
   }
 end
 
@@ -441,18 +528,21 @@ end
 function M.completeSelectionOrScope()
   local bufnr = vim.api.nvim_get_current_buf()
   local visualRange = getVisualRange(bufnr)
-  local range = visualRange or getFallbackRange(bufnr)
+  local fallbackRange = getFallbackRange(bufnr)
+  local range = visualRange or fallbackRange
   local prompt
   if visualRange then
     prompt = buildPrompt(bufnr, range)
   else
-    range = getFullBufferRange(bufnr)
+    local scopeRange = getScopeRange(bufnr)
+    range = scopeRange or fallbackRange
+    local scopeLabel = scopeRange and "Context line" or "Current line"
     prompt = buildPrompt(
       bufnr,
       range,
-      "Full buffer",
+      scopeLabel,
       "Complete the scope based on the context of the line under the cursor. The scope could be a class, method, function, comment, variable, or other logical block. Update the full buffer accordingly.",
-      false
+      true
     )
   end
   startJob(bufnr, range, prompt)
@@ -460,6 +550,7 @@ end
 
 --- Complete the entire buffer based on cursor context.
 function M.completeFullBuffer()
+  -- if bufnr is empty we should not invoke codes, rather then invoke a message that buffer is empty
   local bufnr = vim.api.nvim_get_current_buf()
   local range = getFullBufferRange(bufnr)
   local prompt = buildPrompt(
