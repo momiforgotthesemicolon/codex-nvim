@@ -180,9 +180,12 @@ local function getScopeRange(bufnr, cursor)
     block = 5,
   }
 
+  ---@type TSNode?
   local bestNode = nil
   local bestPriority = math.huge
   local bestSize = math.huge
+
+  ---@type TSNode?
   local current = node
   while current do
     local nodeType = current:type()
@@ -358,14 +361,9 @@ local function buildPrompt(bufnr, range, scopeLabel, taskLabel, includeFullBuffe
   local selectionLines = getText(bufnr, range)
   local bufferLines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local scopeTitle = scopeLabel or "Selection"
-  local taskTitle = taskLabel or "Replace the selected text in the current buffer with the correct output."
-  local returnLabel = scopeLabel == "Current line"
-      and "Return only the replacement text for the current line."
-      or scopeLabel == "Full buffer"
-      and "Return only the replacement text for the full buffer."
-      or scopeLabel == "Context line"
-      and "Return only the replacement text for the detected scope."
-      or "Return only the replacement text for the selection."
+  local taskTitle = taskLabel
+    or "Replace the full buffer with the correct output, using the provided scope as guidance."
+  local returnLabel = "Return only the full buffer text with your changes applied."
   local shouldIncludeFullBuffer = includeFullBuffer ~= false
   local promptLines = {
     "Task: " .. taskTitle,
