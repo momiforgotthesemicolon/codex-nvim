@@ -563,12 +563,8 @@ end
 ---@return boolean
 local function bufferHasContent(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  for _, line in ipairs(lines) do
-    if line:match("%S") then
-      return true
-    end
-  end
-  return false
+  local content = table.concat(lines, "\n"):gsub("%s", "")
+  return content ~= ""
 end
 
 --- Complete the current selection or full buffer based on cursor context.
