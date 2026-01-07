@@ -1,6 +1,6 @@
 local M = {}
 
-local namespace = vim.api.nvim_create_namespace("codex_nvim")
+local namespace = vim.api.nvim_create_namespace("momiforgotsemicolon_codix_nvim")
 local lastLogPath = nil
 local activeJobId = nil
 
