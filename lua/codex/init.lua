@@ -640,6 +640,7 @@ function M.openLastLog()
     cursor = returnCursor,
   })
 
+  vim.message("Press \"q\" to return to your previous view.")
   vim.keymap.set("n", "q", function()
     local ok, data = pcall(vim.api.nvim_buf_get_var, logBuf, "codex_log_return")
     if ok and data then
