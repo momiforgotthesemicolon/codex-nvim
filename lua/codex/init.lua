@@ -624,7 +624,7 @@ function M.openLastLog()
     vim.notify("No Codex log available yet.", vim.log.levels.INFO)
     return
   end
-  vim.cmd("edit " .. vim.fn.fnameescape(lastLogPath))
+  vim.cmd("view " .. vim.fn.fnameescape(lastLogPath))
 end
 
 function M.setup(opts)
