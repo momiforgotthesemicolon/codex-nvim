@@ -7,7 +7,7 @@ to Codex and replaces it with the returned output.
 ![Demo](.github/demo.gif)
 
 ## Requirements
-- `codex` available on your `$PATH`
+- `codex` 0.45.0+ available on your `$PATH`
 - Neovim 0.8+
 
 ## Install (lazy.nvim)
