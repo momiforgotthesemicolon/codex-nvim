@@ -3,6 +3,8 @@ if vim.g.loaded_codex_nvim == 1 then
 end
 vim.g.loaded_codex_nvim = 1
 
+require("codex").checkCodexVersion()
+
 vim.api.nvim_create_user_command("CodexComplete", function()
   require("codex").completeSelectionOrScope()
 end, {})
