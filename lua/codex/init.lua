@@ -406,6 +406,13 @@ local function handleJobStdout(data, stdoutLines, logPath)
   if not data then
     return
   end
+
+  -- There is a chance that buffer at the end returns the output with the empty
+  -- line which is added by codex. We are making sure that we don't introduce
+  -- any unnecesary changes here.
+  if data[#data] == "" and stdoutLines[#stdoutLines] ~= "" then
+    table.remove(data, #data)
+  end
   for _, line in ipairs(data) do
     table.insert(stdoutLines, line)
     appendLog(logPath, "stdout: " .. line)
