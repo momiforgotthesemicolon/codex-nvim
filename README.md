@@ -20,6 +20,9 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
     vim.keymap.set({ "n", "x" }, "<leader>i", function()
       require("codex").completeSelectionOrScope()
     end, { desc = "Codex: complete selection or buffer" })
+    vim.keymap.set({ "n", "x" }, "<leader>ic", function()
+      require("codex").cancelJob()
+    end, { desc = "Codex: cancel running job" })
     vim.keymap.set("n", "<leader><leader>i", function()
       require("codex").openLastLog()
     end, { desc = "Codex: open last log" })
@@ -42,6 +45,7 @@ require("codex").setup({
 Settings:
 - `status_hl` - highlight group used for the inline status line while Codex runs.
 - `status_interval_ms` - how often (ms) the status line updates.
+- `cancelJob()` - public API to stop the active Codex job.
 
 You can also override these via globals:
 - `vim.g.codex_status_hl`
