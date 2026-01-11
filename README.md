@@ -2,6 +2,7 @@
 
 Neovim integration for the `codex` CLI. It sends the current selection or buffer
 to Codex and replaces it with the returned output.
+Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 
 ## Demo
 ![Demo](.github/demo.gif)
@@ -45,3 +46,6 @@ Settings:
 You can also override these via globals:
 - `vim.g.codex_status_hl`
 - `vim.g.codex_status_interval_ms`
+
+## Architecture
+See `ARCHITECTURE.md` for module responsibilities and layout.
