@@ -1,21 +1,40 @@
 local M = {}
 
 local config = {
-  status_hl = "CodexStatus",
-  status_interval_ms = 200,
+  statusHl = "CodexStatus",
+  statusIntervalMs = 200,
 }
 
+local function normalizeOptions(opts)
+  local normalized = {}
+  for key, value in pairs(opts or {}) do
+    if key == "status_hl" then
+      normalized.statusHl = value
+    elseif key == "status_interval_ms" then
+      normalized.statusIntervalMs = value
+    else
+      normalized[key] = value
+    end
+  end
+  return normalized
+end
+
 function M.setup(opts)
-  config = vim.tbl_extend("force", config, opts or {})
+  local normalized = normalizeOptions(opts)
+  config = vim.tbl_extend("force", config, normalized)
 end
 
-function M.resolve_status_hl()
-  return vim.g.codex_status_hl or config.status_hl
+function M.resolveStatusHl()
+  return vim.g.codex_status_hl
+    or vim.g.codex_statusHl
+    or config.statusHl
 end
 
-function M.resolve_status_interval()
-  local interval = vim.g.codex_status_interval_ms or config.status_interval_ms
-  return tonumber(interval) or config.status_interval_ms
+function M.resolveStatusInterval()
+  local interval = vim.g.codex_status_interval_ms
+    or vim.g.codex_statusIntervalMs
+    or config.statusIntervalMs
+  return tonumber(interval) or config.statusIntervalMs
 end
 
 return M

@@ -5,7 +5,7 @@ to Codex and replaces it with the returned output.
 Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 
 ## Demo
-![Demo](.github/demo.gif)
+![Demo](.github/Demo.gif)
 
 ## Requirements
 - `codex` 0.45.0+ available on your `$PATH`
@@ -16,15 +16,15 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 {
   "momiforgotthesemicolon/codex-nvim",
   config = function()
-    require("codex").setup()
+    require("Codex").setup()
     vim.keymap.set({ "n", "x" }, "<leader>i", function()
-      require("codex").completeSelectionOrScope()
+      require("Codex").completeSelectionOrScope()
     end, { desc = "Codex: complete selection or buffer" })
     vim.keymap.set({ "n", "x" }, "<leader>ic", function()
-      require("codex").cancelJob()
+      require("Codex").cancelJob()
     end, { desc = "Codex: cancel running job" })
     vim.keymap.set("n", "<leader><leader>i", function()
-      require("codex").openLastLog()
+      require("Codex").openLastLog()
     end, { desc = "Codex: open last log" })
   end,
 }
@@ -37,19 +37,20 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 
 ## Configuration
 ```lua
-require("codex").setup({
-  status_hl = "CodexStatus",
-  status_interval_ms = 200,
+require("Codex").setup({
+  statusHl = "CodexStatus",
+  statusIntervalMs = 200,
 })
 ```
 Settings:
-- `status_hl` - highlight group used for the inline status line while Codex runs.
-- `status_interval_ms` - how often (ms) the status line updates.
+- `statusHl` - highlight group used for the inline status line while
+  Codex runs.
+- `statusIntervalMs` - how often (ms) the status line updates.
 - `cancelJob()` - public API to stop the active Codex job.
 
 You can also override these via globals:
-- `vim.g.codex_status_hl`
-- `vim.g.codex_status_interval_ms`
+- `vim.g.codex_statusHl` or `vim.g.codex_status_hl`
+- `vim.g.codex_statusIntervalMs` or `vim.g.codex_status_interval_ms`
 
 ## Architecture
 See `ARCHITECTURE.md` for module responsibilities and layout.

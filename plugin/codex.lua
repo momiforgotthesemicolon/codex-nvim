@@ -1,18 +1,18 @@
-if vim.g.loaded_codex_nvim == 1 then
+if vim.g.loadedCodexNvim == 1 or vim.g.loaded_codex_nvim == 1 then
   return
 end
-vim.g.loaded_codex_nvim = 1
+vim.g.loadedCodexNvim = 1
 
-require("codex").checkCodexVersion()
+require("Codex").checkCodexVersion()
 
 vim.api.nvim_create_user_command("CodexComplete", function()
-  require("codex").completeSelectionOrScope()
+  require("Codex").completeSelectionOrScope()
 end, {})
 
 vim.api.nvim_create_user_command("CodexCompleteBuffer", function()
-  require("codex").completeFullBuffer()
+  require("Codex").completeFullBuffer()
 end, {})
 
 vim.api.nvim_create_user_command("CodexOpenLog", function()
-  require("codex").openLastLog()
+  require("Codex").openLastLog()
 end, {})

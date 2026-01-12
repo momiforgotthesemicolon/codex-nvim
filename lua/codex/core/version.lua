@@ -36,14 +36,17 @@ end
 
 local function notifyStaleVersion(version)
   local reported = version or "unknown"
-  vim.notify(
-    "Codex CLI version " .. reported .. " is stale. Require >= " .. minCodexVersion
-      .. "; plugin output may be unexpected.",
-    vim.log.levels.ERROR
-  )
+  local message = table.concat({
+    "Codex CLI version ",
+    reported,
+    " is stale. Require >= ",
+    minCodexVersion,
+    "; plugin output may be unexpected.",
+  })
+  vim.notify(message, vim.log.levels.ERROR)
 end
 
-function M.check_codex_version()
+function M.checkCodexVersion()
   if didCheckCodexVersion then
     return
   end

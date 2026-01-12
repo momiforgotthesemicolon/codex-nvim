@@ -23,11 +23,11 @@ function M.append(path, line)
   file:close()
 end
 
-function M.set_last_log_path(path)
+function M.setLastLogPath(path)
   lastLogPath = path
 end
 
-function M.get_last_log_path()
+function M.getLastLogPath()
   return lastLogPath
 end
 
