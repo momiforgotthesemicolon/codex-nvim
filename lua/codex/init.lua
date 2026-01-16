@@ -66,6 +66,10 @@ function M.openLastLog()
   ui_log.open_last_log()
 end
 
+function M.cancelJob()
+  runner.cancel_job()
+end
+
 function M.setup(opts)
   config.setup(opts)
   status.ensure_highlight()
