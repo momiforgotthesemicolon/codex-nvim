@@ -16,3 +16,7 @@ end, {})
 vim.api.nvim_create_user_command("CodexOpenLog", function()
   require("codex").openLastLog()
 end, {})
+
+vim.api.nvim_create_user_command("CodexCancelJob", function()
+  require("codex").cancelJob()
+end, {})
