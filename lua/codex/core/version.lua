@@ -43,7 +43,7 @@ local function notifyStaleVersion(version)
   )
 end
 
-function M.check_codex_version()
+function M.checkCodexVersion()
   if didCheckCodexVersion then
     return
   end
@@ -64,6 +64,10 @@ function M.check_codex_version()
   if compareVersions(detected, minCodexVersion) < 0 then
     notifyStaleVersion(detected)
   end
+end
+
+function M.check_codex_version()
+  M.checkCodexVersion()
 end
 
 return M

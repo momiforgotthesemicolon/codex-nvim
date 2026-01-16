@@ -11,7 +11,7 @@ local activeJob = nil
 --- Reset timers and status markers for a completed or cancelled job.
 --- Clears the virtual status line and releases any associated timer.
 ---@param job table|nil job state table with timers and status metadata
-local function cleanup_job_state(job)
+local function cleanupJobState(job)
   if not job then
     return
   end
@@ -24,14 +24,14 @@ local function cleanup_job_state(job)
     job.statusTimer = nil
   end
 
-  status.clear_status(job.bufnr, job.extmarkId)
+  status.clearStatus(job.bufnr, job.extmarkId)
   job.extmarkId = nil
 end
 
 --- Check if a status line is a Codex-formatted progress message.
 ---@param line string stderr line to inspect
 ---@return boolean true when the line should be shown as status
-local function is_log_qualified_to_be_viewed(line)
+local function isLogQualifiedToBeViewed(line)
   return line:match("^%*%*.*%*%*$") ~= nil
 end
 
@@ -46,12 +46,12 @@ end
 --- Process stderr output from the Codex job.
 ---@param data string[]|nil stderr lines
 ---@param state table job state for status updates and log capture
-local function handle_job_stderr(data, state)
+local function handleJobStderr(data, state)
   if not data then
     return
   end
   for _, line in ipairs(data) do
-    if is_log_qualified_to_be_viewed(line) then
+    if isLogQualifiedToBeViewed(line) then
       local cleaned = sanitizeLogs(line)
       state.statusMessage = "Codex: " .. cleaned
       log.append(state.logPath, state.statusMessage)
@@ -77,7 +77,7 @@ end
 ---@param data string[]|nil stdout lines
 ---@param stdoutLines string[] accumulator for stdout
 ---@param logPath string path to the log file
-local function handle_job_stdout(data, stdoutLines, logPath)
+local function handleJobStdout(data, stdoutLines, logPath)
   if not data then
     return
   end
@@ -97,9 +97,9 @@ end
 --- Finalize a Codex job and apply its output.
 ---@param opts table job metadata and buffers
 ---@param exitCode integer process exit code
-local function handle_job_exit(opts, exitCode)
+local function handleJobExit(opts, exitCode)
   vim.schedule(function()
-    cleanup_job_state(opts)
+    cleanupJobState(opts)
     if activeJob and activeJob.id == opts.id then
       activeJob = nil
     end
@@ -125,8 +125,8 @@ local function handle_job_exit(opts, exitCode)
     -- codex is not going to change anything but the part we want based on the
     -- promt that we gave him. However this approach is not super reliable and
     -- we should for sure should fix this to be more reliable way.
-    output.replace_full_buffer(opts.bufnr, jobOutput)
-    output.restore_cursor(opts.bufnr, opts.cursor)
+    output.replaceFullBuffer(opts.bufnr, jobOutput)
+    output.restoreCursor(opts.bufnr, opts.cursor)
     log.append(opts.logPath, "Exit code: " .. exitCode)
     log.append(opts.logPath, "Codex invocation finished.")
   end)
@@ -137,7 +137,7 @@ end
 ---@param range table selection range
 ---@param prompt string prompt to send
 ---@param cursor table|nil cursor position {row, col}
-function M.start_job(bufnr, range, prompt, cursor)
+function M.startJob(bufnr, range, prompt, cursor)
   if activeJob and vim.fn.jobwait({ activeJob.id }, 0)[1] == -1 then
     vim.notify("Codex job already running.", vim.log.levels.WARN)
     return
@@ -148,10 +148,10 @@ function M.start_job(bufnr, range, prompt, cursor)
     and vim.fn.fnamemodify(bufferPath, ":h")
     or vim.loop.cwd()
     or "."
-  local repoRoot = acquisition.resolve_repo_root(bufferDir)
+  local repoRoot = acquisition.resolveRepoRoot(bufferDir)
   local jobCwd = repoRoot or bufferDir
   local logPath = vim.fn.tempname() .. ".codex.log"
-  log.set_last_log_path(logPath)
+  log.setLastLogPath(logPath)
 
   log.append(
     logPath,
@@ -209,7 +209,7 @@ function M.start_job(bufnr, range, prompt, cursor)
       state.statusMessage,
       formatElapsed()
     )
-    jobState.extmarkId = status.set_status(
+    jobState.extmarkId = status.setStatus(
       bufnr,
       range,
       message,
@@ -221,24 +221,24 @@ function M.start_job(bufnr, range, prompt, cursor)
   state.updateStatus = updateStatus
 
   jobState.statusTimer = vim.loop.new_timer()
-  jobState.statusTimer:start(0, config.resolve_status_interval(), function()
+  jobState.statusTimer:start(0, config.resolveStatusInterval(), function()
     vim.schedule(updateStatus)
   end)
 
   local jobId = vim.fn.jobstart(command, {
     stdout_buffered = true,
     on_stdout = function(_, data)
-      handle_job_stdout(data, jobState.stdoutLines, logPath)
+      handleJobStdout(data, jobState.stdoutLines, logPath)
     end,
     on_stderr = function(_, data)
-      handle_job_stderr(data, state)
+      handleJobStderr(data, state)
     end,
     on_exit = function(_, exitCode)
-      handle_job_exit(jobState, exitCode)
+      handleJobExit(jobState, exitCode)
     end,
   })
   if jobId <= 0 then
-    cleanup_job_state(jobState)
+    cleanupJobState(jobState)
     vim.notify("Failed to start Codex job", vim.log.levels.ERROR)
     return
   end
@@ -250,7 +250,7 @@ end
 
 --- Cancel the active Codex job if one is running.
 ---@return boolean true when a running job was cancelled
-function M.cancel_job()
+function M.cancelJob()
   -- We will start by checking if there are any active jobs
   if not activeJob or not activeJob.id then
     vim.notify("No active Codex job to cancel.", vim.log.levels.INFO)
@@ -274,11 +274,19 @@ function M.cancel_job()
   -- TODO: it might be neccesary in the future here to track down the ongoing
   -- processes. We don't want to leave zombie processes.
   vim.fn.jobstop(activeJob.id)
-  cleanup_job_state(activeJob)
+  cleanupJobState(activeJob)
   activeJob = nil
 
   vim.notify("Codex job cancelled.", vim.log.levels.INFO)
   return true
+end
+
+function M.start_job(bufnr, range, prompt, cursor)
+  return M.startJob(bufnr, range, prompt, cursor)
+end
+
+function M.cancel_job()
+  return M.cancelJob()
 end
 
 return M
