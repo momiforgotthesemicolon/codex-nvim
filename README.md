@@ -15,6 +15,7 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 ```lua
 {
   "momiforgotthesemicolon/codex-nvim",
+  branch = "main",
   config = function()
     require("codex").setup()
     vim.keymap.set({ "n", "x" }, "<leader>i", function()
@@ -23,6 +24,9 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
     vim.keymap.set("n", "<leader><leader>i", function()
       require("codex").openLastLog()
     end, { desc = "Codex: open last log" })
+    vim.keymap.set("n", "<leader>ic", function()
+      require("codex").cancelJob()
+    end, { desc = "Cancel codex job." })
   end,
 }
 ```
@@ -31,6 +35,14 @@ Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 - `:CodexComplete` - complete the current selection or the full buffer.
 - `:CodexCompleteBuffer` - always run against the full buffer.
 - `:CodexOpenLog` - open the most recent Codex log.
+- `:CodexCancelJob` - cancel the active Codex job, if any.
+
+## Canceling a job
+If Codex is running and you want to stop it, run:
+```
+:CodexCancelJob
+```
+You can also map it to a key (example shown in the install block above).
 
 ## Configuration
 ```lua
