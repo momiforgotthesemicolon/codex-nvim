@@ -25,8 +25,8 @@ function M.buildPrompt(
     and vim.fn.fnamemodify(bufferPath, ":h")
     or vim.loop.cwd()
     or "."
-  local repoRoot = acquisition.resolveRepoRoot(bufferDir) or "unknown"
 
+  local repoRoot = acquisition.resolveRepoRoot(bufferDir) or "unknown"
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local filetype = vim.bo[bufnr].filetype
   local selectionLines = acquisition.getText(bufnr, range)

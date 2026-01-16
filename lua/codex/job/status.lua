@@ -7,8 +7,13 @@ local namespace = vim.api.nvim_create_namespace(
 )
 
 --- Ensure the Codex status highlight group is defined with default styling.
+<<<<<<< HEAD
 function M.ensureHighlight()
   vim.api.nvim_set_hl(0, config.resolveStatusHl(), {
+=======
+function M.ensure_highlight()
+  vim.api.nvim_set_hl(0, config.resolve_status_hl(), {
+>>>>>>> main
     fg = "#bfbfbf",
     default = true,
   })

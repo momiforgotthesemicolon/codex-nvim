@@ -60,9 +60,5 @@ You can also override these via globals:
 - `vim.g.codexStatusHl`
 - `vim.g.codexStatusIntervalMs`
 
-Legacy snake_case options and globals remain supported for compatibility:
-- `status_hl`, `status_interval_ms`
-- `vim.g.codex_status_hl`, `vim.g.codex_status_interval_ms`
-
 ## Architecture
 See `ARCHITECTURE.md` for module responsibilities and layout.
