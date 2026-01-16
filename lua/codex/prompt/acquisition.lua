@@ -41,7 +41,12 @@ function M.get_visual_range(bufnr)
   end
 
   local mode = vim.fn.visualmode()
-  local endLine = vim.api.nvim_buf_get_lines(bufnr, eRow - 1, eRow, false)[1] or ""
+  local endLine = vim.api.nvim_buf_get_lines(
+    bufnr,
+    eRow - 1,
+    eRow,
+    false
+  )[1] or ""
   local endCol
 
   if mode == "V" then
@@ -72,7 +77,12 @@ end
 ---@return table selection range covering the cursor line
 function M.get_fallback_range(bufnr, cursor)
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
-  local line = vim.api.nvim_buf_get_lines(bufnr, cursor[1] - 1, cursor[1], false)[1] or ""
+  local line = vim.api.nvim_buf_get_lines(
+    bufnr,
+    cursor[1] - 1,
+    cursor[1],
+    false
+  )[1] or ""
 
   return {
     start_row = cursor[1],
@@ -90,7 +100,10 @@ function M.get_scope_range(bufnr, cursor)
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local row = cursor[1] - 1
   local col = cursor[2]
-  local ok, node = pcall(vim.treesitter.get_node, { buf = bufnr, pos = { row, col } })
+  local ok, node = pcall(
+    vim.treesitter.get_node,
+    { buf = bufnr, pos = { row, col } }
+  )
   if not ok or not node then
     local ok_parser, parser = pcall(vim.treesitter.get_parser, bufnr)
     if ok_parser and parser then
@@ -147,7 +160,9 @@ function M.get_scope_range(bufnr, cursor)
     if priority then
       local srow, scol, erow, ecol = current:range()
       local size = (erow - srow) * 10000 + (ecol - scol)
-      if priority < bestPriority or (priority == bestPriority and size < bestSize) then
+      if priority < bestPriority
+        or (priority == bestPriority and size < bestSize)
+      then
         bestNode = current
         bestPriority = priority
         bestSize = size
@@ -178,7 +193,12 @@ end
 ---@return table selection range covering the full buffer
 function M.get_full_buffer_range(bufnr)
   local lastLine = vim.api.nvim_buf_line_count(bufnr)
-  local line = vim.api.nvim_buf_get_lines(bufnr, lastLine - 1, lastLine, false)[1] or ""
+  local line = vim.api.nvim_buf_get_lines(
+    bufnr,
+    lastLine - 1,
+    lastLine,
+    false
+  )[1] or ""
 
   return {
     start_row = 1,

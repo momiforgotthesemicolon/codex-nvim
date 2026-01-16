@@ -37,8 +37,8 @@ end
 local function notifyStaleVersion(version)
   local reported = version or "unknown"
   vim.notify(
-    "Codex CLI version " .. reported .. " is stale. Require >= " .. minCodexVersion
-      .. "; plugin output may be unexpected.",
+    "Codex CLI version " .. reported .. " is stale. Require >= "
+      .. minCodexVersion .. "; plugin output may be unexpected.",
     vim.log.levels.ERROR
   )
 end

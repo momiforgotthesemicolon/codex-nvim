@@ -1,0 +1,46 @@
+name: Line length
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  line-length:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check line length
+        run: |
+          python - <<'PY'
+          import pathlib
+          import subprocess
+          import sys
+
+          max_len = 80
+          files = subprocess.check_output(
+              ["git", "ls-files"],
+              text=True,
+          ).splitlines()
+          errors = []
+
+          for path in files:
+              file_path = pathlib.Path(path)
+              if file_path.is_dir():
+                  continue
+              data = file_path.read_bytes()
+              if b"\0" in data:
+                  continue
+              try:
+                  content = data.decode("utf-8")
+              except UnicodeDecodeError:
+                  content = data.decode("utf-8", errors="replace")
+              for idx, line in enumerate(content.splitlines(), 1):
+                  if len(line) > max_len:
+                      errors.append(f"{path}:{idx}:{len(line)}")
+
+          if errors:
+              print("Lines exceed 80 characters:")
+              print("\n".join(errors))
+              sys.exit(1)
+          print("All lines are <= 80 characters.")
+          PY

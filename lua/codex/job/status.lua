@@ -2,11 +2,16 @@ local config = require("codex.core.config")
 
 local M = {}
 
-local namespace = vim.api.nvim_create_namespace("momiforgotsemicolon_codex_nvim")
+local namespace = vim.api.nvim_create_namespace(
+  "momiforgotsemicolon_codex_nvim"
+)
 
 --- Ensure the Codex status highlight group is defined with default styling.
 function M.ensure_highlight()
-  vim.api.nvim_set_hl(0, config.resolve_status_hl(), { fg = "#bfbfbf", default = true })
+  vim.api.nvim_set_hl(0, config.resolve_status_hl(), {
+    fg = "#bfbfbf",
+    default = true,
+  })
 end
 
 M.ensure_highlight()
