@@ -3,7 +3,8 @@ local log = require("codex.core.log")
 local M = {}
 
 --- Open the most recent Codex log and map "q" to return to the previous buffer.
---- Stores the originating window, buffer, and cursor so the log view can jump back.
+--- Stores the originating window, buffer, and cursor so the log view can jump
+--- back.
 function M.open_last_log()
   local lastLogPath = log.get_last_log_path()
   if not lastLogPath then
@@ -24,7 +25,10 @@ function M.open_last_log()
     cursor = returnCursor,
   })
 
-  vim.notify("Press \"q\" to return to your previous view.", vim.log.levels.INFO)
+  vim.notify(
+    "Press \"q\" to return to your previous view.",
+    vim.log.levels.INFO
+  )
   vim.keymap.set("n", "q", function()
     local ok, data = pcall(vim.api.nvim_buf_get_var, logBuf, "codex_log_return")
     if ok and data then

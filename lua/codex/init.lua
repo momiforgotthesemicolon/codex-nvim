@@ -34,7 +34,9 @@ function M.completeSelectionOrScope()
       bufnr,
       range,
       scopeLabel,
-      "Complete the scope based on the context of the line under the cursor. The scope could be a class, method, function, comment, variable, or other logical block. Update the full buffer accordingly.",
+      "Complete the scope based on the context of the line under the cursor. "
+        .. "The scope could be a class, method, function, comment, variable, "
+        .. "or other logical block. Update the full buffer accordingly.",
       true,
       cursor
     )
@@ -55,7 +57,9 @@ function M.completeFullBuffer()
     bufnr,
     range,
     "Full buffer",
-    "Replace the full buffer with the generated output only in the context of given neovim cursor. Context could be inside a function, lambda, class, method or scope implementation.",
+    "Replace the full buffer with the generated output only in the context of "
+      .. "given neovim cursor. Context could be inside a function, lambda, "
+      .. "class, method or scope implementation.",
     false,
     cursor
   )

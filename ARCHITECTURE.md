@@ -1,6 +1,7 @@
 # Architecture
 
-This plugin is split into small modules by responsibility. Each module should do one thing well and avoid cross-cutting concerns.
+This plugin is split into small modules by responsibility. Each module should
+do one thing well and avoid cross-cutting concerns.
 
 ## Directory layout
 
@@ -43,5 +44,6 @@ This plugin is split into small modules by responsibility. Each module should do
 
 - New prompt logic: add to `lua/codex/prompt/`.
 - New job lifecycle behavior: add to `lua/codex/job/`.
-- New user-facing views or commands: add to `lua/codex/ui/` and wire in `init.lua`.
+- New user-facing views or commands: add to `lua/codex/ui/` and wire in
+  `init.lua`.
 - New cross-cutting shared helpers: add to `lua/codex/core/`.

@@ -111,7 +111,8 @@ local function handle_job_exit(opts, exitCode)
       return
     end
     if exitCode ~= 0 then
-      vim.notify("Codex failed. See log: " .. opts.logPath, vim.log.levels.ERROR)
+      local message = "Codex failed. See log: " .. opts.logPath
+      vim.notify(message, vim.log.levels.ERROR)
       log.append(opts.logPath, "Exit code: " .. exitCode)
       return
     end
@@ -143,15 +144,24 @@ function M.start_job(bufnr, range, prompt, cursor)
   end
 
   local bufferPath = vim.api.nvim_buf_get_name(bufnr)
-  local bufferDir = bufferPath ~= "" and vim.fn.fnamemodify(bufferPath, ":h") or vim.loop.cwd() or "."
+  local bufferDir = bufferPath ~= ""
+    and vim.fn.fnamemodify(bufferPath, ":h")
+    or vim.loop.cwd()
+    or "."
   local repoRoot = acquisition.resolve_repo_root(bufferDir)
   local jobCwd = repoRoot or bufferDir
   local logPath = vim.fn.tempname() .. ".codex.log"
   log.set_last_log_path(logPath)
 
-  log.append(logPath, "Codex invocation started at " .. vim.fn.strftime("%Y-%m-%d %H:%M:%S"))
+  log.append(
+    logPath,
+    "Codex invocation started at " .. vim.fn.strftime("%Y-%m-%d %H:%M:%S")
+  )
   log.append(logPath, "CWD: " .. jobCwd)
-  log.append(logPath, "Buffer: " .. (bufferPath ~= "" and bufferPath or "unknown"))
+  log.append(
+    logPath,
+    "Buffer: " .. (bufferPath ~= "" and bufferPath or "unknown")
+  )
   log.append(logPath, "Prompt:")
   log.append(logPath, prompt)
 
@@ -194,8 +204,18 @@ function M.start_job(bufnr, range, prompt, cursor)
     if not state.statusMessage then
       return
     end
-    local message = string.format("%s (%s)", state.statusMessage, formatElapsed())
-    jobState.extmarkId = status.set_status(bufnr, range, message, jobState.extmarkId, cursor)
+    local message = string.format(
+      "%s (%s)",
+      state.statusMessage,
+      formatElapsed()
+    )
+    jobState.extmarkId = status.set_status(
+      bufnr,
+      range,
+      message,
+      jobState.extmarkId,
+      cursor
+    )
   end
 
   state.updateStatus = updateStatus
