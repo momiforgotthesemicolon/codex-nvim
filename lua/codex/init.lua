@@ -3,7 +3,7 @@ local builder = require("codex.prompt.builder")
 local config = require("codex.core.config")
 local runner = require("codex.job.runner")
 local status = require("codex.job.status")
-local ui_log = require("codex.ui.log_view")
+local uiLog = require("codex.ui.logView")
 local version = require("codex.core.version")
 
 local M = {}
@@ -67,7 +67,7 @@ function M.completeFullBuffer()
 end
 
 function M.openLastLog()
-  ui_log.openLastLog()
+  uiLog.openLastLog()
 end
 
 function M.cancelJob()
