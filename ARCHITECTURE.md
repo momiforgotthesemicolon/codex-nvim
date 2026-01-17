@@ -28,7 +28,7 @@ do one thing well and avoid cross-cutting concerns.
 
 - lua/codex/ui/
   - User-facing UI helpers.
-  - log_view.lua: open last log and return mapping.
+  - logView.lua: open last log and return mapping.
 
 - plugin/codex.lua
   - Neovim command registration and lazy-load entry point.

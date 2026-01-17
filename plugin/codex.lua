@@ -1,8 +1,8 @@
-if vim.g.loaded_codex_nvim == 1 then
+if vim.g.loadedCodexNvim == 1 or vim.g.loaded_codex_nvim == 1 then
   return
 end
+vim.g.loadedCodexNvim = 1
 vim.g.loaded_codex_nvim = 1
-
 require("codex").checkCodexVersion()
 
 vim.api.nvim_create_user_command("CodexComplete", function()

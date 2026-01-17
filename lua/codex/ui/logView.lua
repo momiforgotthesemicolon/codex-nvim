@@ -5,8 +5,8 @@ local M = {}
 --- Open the most recent Codex log and map "q" to return to the previous buffer.
 --- Stores the originating window, buffer, and cursor so the log view can jump
 --- back.
-function M.open_last_log()
-  local lastLogPath = log.get_last_log_path()
+function M.openLastLog()
+  local lastLogPath = log.getLastLogPath()
   if not lastLogPath then
     vim.notify("No Codex log available yet.", vim.log.levels.INFO)
     return
@@ -45,6 +45,10 @@ function M.open_last_log()
     end
     pcall(vim.cmd, "bdelete")
   end, { buffer = logBuf, silent = true, nowait = true })
+end
+
+function M.open_last_log()
+  M.openLastLog()
 end
 
 return M

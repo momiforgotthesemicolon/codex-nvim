@@ -3,7 +3,7 @@ local M = {}
 --- Replace the full buffer text.
 ---@param bufnr integer buffer handle
 ---@param newText string replacement text
-function M.replace_full_buffer(bufnr, newText)
+function M.replaceFullBuffer(bufnr, newText)
   local newLines = {}
   if newText ~= "" then
     newLines = vim.split(newText, "\n", { plain = true })
@@ -11,10 +11,14 @@ function M.replace_full_buffer(bufnr, newText)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, newLines)
 end
 
+function M.replace_full_buffer(bufnr, newText)
+  return M.replaceFullBuffer(bufnr, newText)
+end
+
 --- Restore the cursor position after buffer updates.
 ---@param bufnr integer buffer handle
 ---@param cursor table|nil cursor position {row, col}
-function M.restore_cursor(bufnr, cursor)
+function M.restoreCursor(bufnr, cursor)
   if not cursor then
     return
   end
@@ -26,6 +30,10 @@ function M.restore_cursor(bufnr, cursor)
   local line = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
   local col = math.max(0, math.min(cursor[2], #line))
   vim.api.nvim_win_set_cursor(0, { row, col })
+end
+
+function M.restore_cursor(bufnr, cursor)
+  return M.restoreCursor(bufnr, cursor)
 end
 
 return M

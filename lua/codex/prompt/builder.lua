@@ -12,7 +12,7 @@ local M = {}
 ---@return string prompt text
 ---@return string|nil repoRoot repository root (if detected)
 ---@return string bufferDir buffer directory
-function M.build_prompt(
+function M.buildPrompt(
   bufnr,
   range,
   scopeLabel,
@@ -25,11 +25,11 @@ function M.build_prompt(
     and vim.fn.fnamemodify(bufferPath, ":h")
     or vim.loop.cwd()
     or "."
-  local repoRoot = acquisition.resolve_repo_root(bufferDir) or "unknown"
 
+  local repoRoot = acquisition.resolveRepoRoot(bufferDir) or "unknown"
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local filetype = vim.bo[bufnr].filetype
-  local selectionLines = acquisition.get_text(bufnr, range)
+  local selectionLines = acquisition.getText(bufnr, range)
   local bufferLines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local scopeTitle = scopeLabel or "Selection"
   local taskTitle = taskLabel
@@ -75,6 +75,24 @@ function M.build_prompt(
       .. "clean from new lines - Its very important",
   })
   return table.concat(promptLines, "\n"), repoRoot, bufferDir
+end
+
+function M.build_prompt(
+  bufnr,
+  range,
+  scopeLabel,
+  taskLabel,
+  includeFullBuffer,
+  cursor
+)
+  return M.buildPrompt(
+    bufnr,
+    range,
+    scopeLabel,
+    taskLabel,
+    includeFullBuffer,
+    cursor
+  )
 end
 
 return M

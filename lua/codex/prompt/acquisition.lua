@@ -1,10 +1,14 @@
 local M = {}
 
+local function getRangeValue(range, camelKey, snakeKey)
+  return range[camelKey] or range[snakeKey]
+end
+
 --- Resolve the git repository root for a buffer directory.
 --- Returns nil when the directory is not inside a git repository.
 ---@param bufDir string directory containing the buffer
 ---@return string|nil path to the root repository folder
-function M.resolve_repo_root(bufDir)
+function M.resolveRepoRoot(bufDir)
   local cmd = { "git", "-C", bufDir, "rev-parse", "--show-toplevel" }
   local output = vim.fn.systemlist(cmd)
 
@@ -15,10 +19,14 @@ function M.resolve_repo_root(bufDir)
   return output[1]
 end
 
+function M.resolve_repo_root(bufDir)
+  return M.resolveRepoRoot(bufDir)
+end
+
 --- Get the current visual selection range, if any.
 ---@param bufnr integer buffer handle
----@return table|nil selection range with start_row/start_col/end_row/end_col
-function M.get_visual_range(bufnr)
+---@return table|nil selection range with startRow/startCol/endRow/endCol
+function M.getVisualRange(bufnr)
   local currentMode = vim.fn.mode()
 
   if currentMode ~= "v" and currentMode ~= "V" and currentMode ~= "\22" then
@@ -64,6 +72,10 @@ function M.get_visual_range(bufnr)
   end
 
   return {
+    startRow = sRow,
+    startCol = math.max(sCol, 0),
+    endRow = eRow,
+    endCol = endCol,
     start_row = sRow,
     start_col = math.max(sCol, 0),
     end_row = eRow,
@@ -71,11 +83,15 @@ function M.get_visual_range(bufnr)
   }
 end
 
+function M.get_visual_range(bufnr)
+  return M.getVisualRange(bufnr)
+end
+
 --- Build a range for the current cursor line.
 ---@param bufnr integer buffer handle
 ---@param cursor table|nil cursor position {row, col}
 ---@return table selection range covering the cursor line
-function M.get_fallback_range(bufnr, cursor)
+function M.getFallbackRange(bufnr, cursor)
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local line = vim.api.nvim_buf_get_lines(
     bufnr,
@@ -85,6 +101,10 @@ function M.get_fallback_range(bufnr, cursor)
   )[1] or ""
 
   return {
+    startRow = cursor[1],
+    startCol = 0,
+    endRow = cursor[1],
+    endCol = #line,
     start_row = cursor[1],
     start_col = 0,
     end_row = cursor[1],
@@ -92,11 +112,15 @@ function M.get_fallback_range(bufnr, cursor)
   }
 end
 
+function M.get_fallback_range(bufnr, cursor)
+  return M.getFallbackRange(bufnr, cursor)
+end
+
 --- Determine the smallest relevant scope around the cursor.
 ---@param bufnr integer buffer handle
 ---@param cursor table|nil cursor position {row, col}
 ---@return table|nil selection range covering the detected scope
-function M.get_scope_range(bufnr, cursor)
+function M.getScopeRange(bufnr, cursor)
   cursor = cursor or vim.api.nvim_win_get_cursor(0)
   local row = cursor[1] - 1
   local col = cursor[2]
@@ -181,6 +205,10 @@ function M.get_scope_range(bufnr, cursor)
   end
 
   return {
+    startRow = srow + 1,
+    startCol = scol,
+    endRow = erow + 1,
+    endCol = ecol,
     start_row = srow + 1,
     start_col = scol,
     end_row = erow + 1,
@@ -188,10 +216,14 @@ function M.get_scope_range(bufnr, cursor)
   }
 end
 
+function M.get_scope_range(bufnr, cursor)
+  return M.getScopeRange(bufnr, cursor)
+end
+
 --- Build a range that spans the entire buffer.
 ---@param bufnr integer buffer handle
 ---@return table selection range covering the full buffer
-function M.get_full_buffer_range(bufnr)
+function M.getFullBufferRange(bufnr)
   local lastLine = vim.api.nvim_buf_line_count(bufnr)
   local line = vim.api.nvim_buf_get_lines(
     bufnr,
@@ -201,6 +233,10 @@ function M.get_full_buffer_range(bufnr)
   )[1] or ""
 
   return {
+    startRow = 1,
+    startCol = 0,
+    endRow = lastLine,
+    endCol = #line,
     start_row = 1,
     start_col = 0,
     end_row = lastLine,
@@ -208,25 +244,37 @@ function M.get_full_buffer_range(bufnr)
   }
 end
 
+function M.get_full_buffer_range(bufnr)
+  return M.getFullBufferRange(bufnr)
+end
+
 --- Fetch the text within a range.
 ---@param bufnr integer buffer handle
----@param range table selection range with start_row/start_col/end_row/end_col
+---@param range table selection range with startRow/startCol/endRow/endCol
 ---@return string[] lines of text in the range
-function M.get_text(bufnr, range)
+function M.getText(bufnr, range)
+  local startRow = getRangeValue(range, "startRow", "start_row")
+  local startCol = getRangeValue(range, "startCol", "start_col")
+  local endRow = getRangeValue(range, "endRow", "end_row")
+  local endCol = getRangeValue(range, "endCol", "end_col")
   return vim.api.nvim_buf_get_text(
     bufnr,
-    range.start_row - 1,
-    range.start_col,
-    range.end_row - 1,
-    range.end_col,
+    startRow - 1,
+    startCol,
+    endRow - 1,
+    endCol,
     {}
   )
+end
+
+function M.get_text(bufnr, range)
+  return M.getText(bufnr, range)
 end
 
 --- Check if the buffer has any non-whitespace content.
 ---@param bufnr integer buffer handle
 ---@return boolean
-function M.buffer_has_content(bufnr)
+function M.bufferHasContent(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   for _, line in ipairs(lines) do
     if line:match("[^%s%z]") then
@@ -234,6 +282,10 @@ function M.buffer_has_content(bufnr)
     end
   end
   return false
+end
+
+function M.buffer_has_content(bufnr)
+  return M.bufferHasContent(bufnr)
 end
 
 return M

@@ -47,18 +47,18 @@ You can also map it to a key (example shown in the install block above).
 ## Configuration
 ```lua
 require("codex").setup({
-  status_hl = "CodexStatus",
-  status_interval_ms = 200,
+  statusHl = "CodexStatus",
+  statusIntervalMs = 200,
 })
 ```
 Settings:
-- `status_hl` - highlight group used for the inline status line while Codex
+- `statusHl` - highlight group used for the inline status line while Codex
   runs.
-- `status_interval_ms` - how often (ms) the status line updates.
+- `statusIntervalMs` - how often (ms) the status line updates.
 
 You can also override these via globals:
-- `vim.g.codex_status_hl`
-- `vim.g.codex_status_interval_ms`
+- `vim.g.codexStatusHl`
+- `vim.g.codexStatusIntervalMs`
 
 ## Architecture
 See `ARCHITECTURE.md` for module responsibilities and layout.
