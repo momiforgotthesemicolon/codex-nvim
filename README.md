@@ -2,7 +2,6 @@
 
 Neovim integration for the `codex` CLI. It sends the current selection or buffer
 to Codex and replaces it with the returned output.
-Modular Lua architecture; see `ARCHITECTURE.md` for module layout.
 
 ## Demo
 ![Demo](.github/demo.gif)
